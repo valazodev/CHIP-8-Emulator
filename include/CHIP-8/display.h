@@ -11,49 +11,37 @@ class Display
 
 public:
 
-    /* Types */
-    struct PixelSize
-    {
-        using RealPixels = unsigned int;
-        RealPixels width;
-        RealPixels height;
-        PixelSize () : width(1), height(1) {}
-        PixelSize (RealPixels width, RealPixels height);
-        PixelSize (float scale, float aspect_ratio);
+    struct Scale {
+        float x;
+        float y;
+        Scale (float value);
+        Scale (float x_scale, float y_scale);
     };
 
-    /* Aliases */
     using Coord  = unsigned int;
     using Pixels = unsigned int;
     using String = std::string;
+    using Sprite = std::vector <bool>;
 
-    /* Constructors & destructors */
-     Display (String title, Pixels width, Pixels height, PixelSize px_size);
+     Display (String title, Pixels width, Pixels height, Scale scale);
     ~Display ();
 
-    /* Public methods */
     void clear ();
-    void draw  (Coord x, Coord y, unsigned height);
+    void draw  (const Sprite& sprite, Coord x, Coord y, unsigned height);
 
 private:
 
-    /* Types */
     using RectVector = std::vector <SDL_Rect>;
 
-    /* Size data */
+    String title;
     Pixels width;
     Pixels height;
-    PixelSize px_size;
+    Scale scale;
 
-    /* SDL components */
-    SDL_Window* window;
-    SDL_Surface* screenSurface;
     RectVector pixels;
+    SDL_Window* window;
+    SDL_Renderer* renderer;
 
-    /* Misc info */
-    std::string title;
-
-    /* Methods */
     void init_pixels ();
     void init_SDL    ();
 };

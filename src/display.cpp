@@ -2,13 +2,9 @@
 
 #include <stdexcept>
 
-Display::Display (String title, Pixels width, Pixels height, PixelSize px_size)
+Display::Display (String title, Pixels width, Pixels height, Scale scale)
+    : title(title), width(width), height(height), scale(scale)
 {
-    this->title = title;
-    this->width = width;
-    this->height = height;
-    this->px_size = px_size;
-
     init_pixels();
     init_SDL();
     clear();
@@ -20,34 +16,43 @@ Display::~Display ()
     SDL_Quit();
 }
 
-Display::PixelSize::PixelSize (RealPixels width, RealPixels height)
+Display::Scale::Scale (float value)
 {
-    this->width = width;
-    this->height = height;
+    x = value;
+    y = value;
 }
 
-Display::PixelSize::PixelSize (float scale, float aspect_ratio)
+Display::Scale::Scale (float x_scale, float y_scale)
 {
-    width = RealPixels(scale * aspect_ratio);
-    height = RealPixels(scale);
+    x = x_scale;
+    y = y_scale;
 }
 
 void Display::clear ()
 {
-    SDL_FillRect (
-        screenSurface,
-        nullptr,
-        SDL_MapRGB (
-            screenSurface->format,
-            255, 255, 255
-        )
-    );
-    SDL_UpdateWindowSurface(window);
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderClear(renderer);
 }
 
-void Display::draw (Coord x, Coord y, unsigned height)
+void Display::draw (const Sprite& sprite, Coord x, Coord y, unsigned height)
 {
+    auto width = unsigned(sprite.size());
 
+    for (auto j=x; j < x+width; ++j)
+    {
+        if (sprite[j-x] == true)
+            SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+        else
+            SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
+        for (auto i=y; i < y+height; ++i) {
+            size_t index = (width*i) + j;
+            auto& pixel = pixels[index];
+
+            SDL_RenderSetViewport(renderer, &pixel);
+            SDL_RenderPresent(renderer);
+        }
+    }
 }
 
 void Display::init_pixels ()
@@ -59,10 +64,10 @@ void Display::init_pixels ()
             size_t index = (width * y) + x;
             auto& pixel = pixels[index];
 
-            pixel.w = int(px_size.width);
-            pixel.h = int(px_size.height);
-            pixel.x = int(x * px_size.width);
-            pixel.y = int(y * px_size.height);
+            pixel.w = int(scale.x);
+            pixel.h = int(scale.y);
+            pixel.x = int(x * scale.x);
+            pixel.y = int(y * scale.y);
         }
     }
 }
@@ -76,8 +81,8 @@ void Display::init_SDL()
         title.c_str(),
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        int(width * px_size.width),
-        int(height * px_size.height),
+        int(width * scale.x),
+        int(height * scale.y),
         SDL_WINDOW_SHOWN);
 
     if (!window) {
