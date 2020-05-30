@@ -7,7 +7,43 @@
 // Headers STL
 #include <fstream>
 
-CPU::CPU() : display(Display("CHIP-8 Emulator", width, height, 20)) {}
+CPU::CPU() : display(Display("CHIP-8 Emulator", width, height, 20))
+{
+    load_fonts();
+}
+
+void CPU::load_symbol(uint16_t address, Font values)
+{
+    for (unsigned i=0; i<5; ++i)
+        memory[address + i] = values[i];
+}
+
+uint16_t CPU::get_font_address(uint8_t hex_value)
+{
+    uint16_t address = 0x100;
+    address &= (hex_value << 4);
+    return address;
+}
+
+void CPU::load_fonts()
+{
+    load_symbol(0x100, Font{0xF0, 0x90, 0x90, 0x90, 0xF0}); /* 0 */
+    load_symbol(0x110, Font{0x20, 0x60, 0x20, 0x20, 0x70}); /* 1 */
+    load_symbol(0x120, Font{0xF0, 0x10, 0xF0, 0x80, 0xF0}); /* 2 */
+    load_symbol(0x130, Font{0xF0, 0x10, 0xF0, 0x10, 0xF0}); /* 3 */
+    load_symbol(0x140, Font{0x90, 0x90, 0xF0, 0x10, 0x10}); /* 4 */
+    load_symbol(0x150, Font{0xF0, 0x80, 0xF0, 0x10, 0xF0}); /* 5 */
+    load_symbol(0x160, Font{0xF0, 0x80, 0xF0, 0x90, 0xF0}); /* 6 */
+    load_symbol(0x170, Font{0xF0, 0x10, 0x20, 0x40, 0x40}); /* 7 */
+    load_symbol(0x180, Font{0xF0, 0x90, 0xF0, 0x90, 0xF0}); /* 8 */
+    load_symbol(0x190, Font{0xF0, 0x90, 0xF0, 0x10, 0xF0}); /* 9 */
+    load_symbol(0x1A0, Font{0xF0, 0x90, 0xF0, 0x90, 0x90}); /* A */
+    load_symbol(0x1B0, Font{0xE0, 0x90, 0xE0, 0x90, 0xE0}); /* B */
+    load_symbol(0x1C0, Font{0xF0, 0x80, 0x80, 0x80, 0xF0}); /* C */
+    load_symbol(0x1D0, Font{0xE0, 0x90, 0x90, 0x90, 0xE0}); /* D */
+    load_symbol(0x1E0, Font{0xF0, 0x80, 0xF0, 0x80, 0xF0}); /* E */
+    load_symbol(0x1F0, Font{0xF0, 0x80, 0xF0, 0x80, 0x80}); /* F */
+}
 
 void CPU::open_rom (std::string path)
 {
@@ -144,6 +180,14 @@ uint8_t CPU::rshift (uint8_t num)
     return num >> 1;
 }
 
+uint16_t CPU::add_16 (uint16_t a, uint16_t b)
+{
+    uint8_t& overflow = data_reg[0x0F];
+    uint32_t ret = uint32_t(a) + uint32_t(b);
+    overflow = uint8_t(ret >> 16);
+    return uint16_t(ret & 0x0000FFFF);
+}
+
 void CPU::draw_sprite (uint8_t x, uint8_t y, uint8_t height)
 {
     uint16_t screen = 0x0F00 + (8 * y) + x;
@@ -262,9 +306,27 @@ void CPU::execute_opcode ()
     }
     case 0xE: {
         auto X = second_hex(opcode);
+        if ((opcode & 0x00FF) == 0x009E)
+            if(key() == data_reg[X])
+                skip_next_opcode();
+        if ((opcode & 0x00FF) == 0x00A1)
+            if(key() != data_reg[X])
+                skip_next_opcode();
         break;
     }
     case 0xF: {
+        auto& I = address_reg;
+        auto  X = second_hex(opcode);
+        auto  second_byte = opcode & 0x00FF;
+        if (second_byte == 0x07) data_reg[X] = delay_timer;         else
+        if (second_byte == 0x0A) data_reg[X] = get_key();           else
+        if (second_byte == 0x15) delay_timer = data_reg[X];         else
+        if (second_byte == 0x18) sound_timer = data_reg[X];         else
+        if (second_byte == 0x1E) I = add_16(I, data_reg[X]);        else
+        if (second_byte == 0x29) I = get_font_address(data_reg[X]); else
+        if (second_byte == 0x33);
+        if (second_byte == 0x55);
+        if (second_byte == 0x65);
         break;
     }
 
