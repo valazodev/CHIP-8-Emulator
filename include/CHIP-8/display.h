@@ -12,8 +12,7 @@ class Display
 public:
 
     struct Scale {
-        float x;
-        float y;
+        float x, y;
         Scale (float value);
         Scale (float x_scale, float y_scale);
     };
@@ -26,24 +25,26 @@ public:
      Display (String title, Pixels width, Pixels height, Scale scale);
     ~Display ();
 
-    void clear ();
-    void draw  (const Sprite& sprite, Coord x, Coord y, unsigned height);
+    void clear  ();
+    void draw   (const Sprite& sprite, Coord x, Coord y, unsigned height);
 
 private:
 
-    using RectVector = std::vector <SDL_Rect>;
+    struct RGBA {
+        uint8_t r, g, b, a;
+        RGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+    };
 
     String title;
     Pixels width;
     Pixels height;
     Scale scale;
 
-    RectVector pixels;
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-    void init_pixels ();
-    void init_SDL    ();
+    void init_SDL ();
+    void render   (SDL_Rect area, RGBA color);
 };
 
 
