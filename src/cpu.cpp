@@ -7,10 +7,7 @@
 // Headers STL
 #include <fstream>
 
-CPU::CPU()
-{
-    display = std::make_unique <Display> ("CHIP-8 Emulator", width, height);
-}
+CPU::CPU() : display(Display("CHIP-8 Emulator", width, height, 20)) {}
 
 void CPU::open_rom (std::string path)
 {
@@ -57,6 +54,15 @@ uint8_t CPU::third_hex (const uint16_t& opcode)
 uint8_t CPU::fourth_hex (const uint16_t& opcode)
 {
     return uint8_t(opcode & 0x000F);
+}
+
+auto CPU::byte_to_sprite(const uint8_t& byte)
+{
+    Display::Sprite sprite;
+    for (uint8_t i=0; i<8; ++i)
+        sprite[i] = bool( (byte >> (7-i)) & 0x01 );
+
+    return sprite;
 }
 
 uint16_t CPU::stack_top ()
@@ -140,12 +146,22 @@ uint8_t CPU::rshift (uint8_t num)
 
 void CPU::draw_sprite (uint8_t x, uint8_t y, uint8_t height)
 {
-    auto& par = pixel_aspect_ratio;
-    uint16_t address = 0x0F00 + (par * y) + x;
-    for (auto i=0; i<height; ++i) {
-        memory[address] = 1*
+    uint16_t screen = 0x0F00 + (8 * y) + x;
+
+    data_reg[0xF] = 0;
+    for (unsigned i=0; i<height; ++i)
+    {
+        uint8_t writer = memory[address_reg + i];
+        uint8_t written = memory[screen + (8 * i)];
+
+        // Bit flipped from set to unset
+        if ((writer & written) > 0x00)
+            data_reg[0xF] = 1;
+
+        written ^= writer;
+        auto sprite = byte_to_sprite(written);
+        display.draw(sprite, x, y+i);
     }
-    display->draw(x, y, height);
 }
 
 void CPU::execute_opcode ()
@@ -157,7 +173,7 @@ void CPU::execute_opcode ()
     switch( first_hex(opcode) )
     {
     case 0x0:
-        if (opcode == 0x00E0) display->clear(); else
+        if (opcode == 0x00E0) display.clear(); else
         if (opcode == 0x00EE) return_from_call();
         break;
 
@@ -241,10 +257,11 @@ void CPU::execute_opcode ()
         auto X = second_hex(opcode);
         auto Y = third_hex(opcode);
         auto N = fourth_hex(opcode);
-        draw(X,Y,N);
+        draw_sprite(X,Y,N);
         break;
     }
     case 0xE: {
+        auto X = second_hex(opcode);
         break;
     }
     case 0xF: {

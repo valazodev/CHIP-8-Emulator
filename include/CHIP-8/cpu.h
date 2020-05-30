@@ -14,11 +14,10 @@ public:
     void open_rom(std::string path);
 
 private:
-    const uint8_t width = 8;
+    const uint8_t width = 64;
     const uint8_t height = 32;
-    const uint8_t pixel_aspect_ratio = 8;
 
-    std::unique_ptr<Display> display;
+    Display display;
 
     uint8_t delay_timer;
     uint8_t sound_timer;
@@ -30,17 +29,18 @@ private:
     std::array <uint8_t,4096>  memory;
 
     // Byte splitters
-    uint8_t  first_hex   (const uint16_t& opcode); /* DONE */
-    uint8_t  second_hex  (const uint16_t& opcode); /* DONE */
-    uint8_t  third_hex   (const uint16_t& opcode); /* DONE */
-    uint8_t  fourth_hex  (const uint16_t& opcode); /* DONE */
+    uint8_t  first_hex       (const uint16_t& opcode); /* DONE */
+    uint8_t  second_hex      (const uint16_t& opcode); /* DONE */
+    uint8_t  third_hex       (const uint16_t& opcode); /* DONE */
+    uint8_t  fourth_hex      (const uint16_t& opcode); /* DONE */
+    auto     byte_to_sprite  (const uint8_t& byte); /* DONE */
 
     // Opcodes
     void      execute_opcode  ();
     uint16_t  fetch_opcode    (); /* DONE */
 
     // Display
-    void draw_sprite (uint8_t x, uint8_t y, uint8_t height);
+    void draw_sprite (uint8_t x, uint8_t y, uint8_t height); /* DONE */
 
     // Stack operations
     uint16_t  stack_top   (); /* DONE */

@@ -38,26 +38,25 @@ void Display::clear ()
     SDL_RenderClear(renderer);
 }
 
-void Display::draw (const Sprite& sprite, Coord x, Coord y, unsigned height)
+void Display::draw (const Sprite& sprite, Coord x, Coord y)
 {
-    auto width = unsigned(sprite.size());
+    auto width = unsigned(8);
 
-    SDL_Rect area;
-    area.y = int(y * scale.y);
-    area.h = int(height * scale.x);
-    area.w = int(width * scale.y);
+    SDL_Rect pixel;
+    pixel.y = int(y * scale.y);
+    pixel.h = int(height * scale.x);
+    pixel.w = int(width * scale.y);
 
     const RGBA black(0x00,0x00,0x00,0x00);
     const RGBA white(0xFF,0xFF,0xFF,0xFF);
 
-    for (auto col=x; col < x+width; ++col)
-    {
-        area.x = int(col * scale.x);
+    for (unsigned col=0; col<width; ++col) {
+        pixel.x = int((x + col) * scale.x);
 
-        if (sprite[col-x])
-            render(area, white);
+        if (sprite[col])
+            render(pixel, white);
         else
-            render(area, black);
+            render(pixel, black);
     }
 }
 

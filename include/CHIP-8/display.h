@@ -1,8 +1,8 @@
 #ifndef DISPLAY_CPP
 #define DISPLAY_CPP
 
+#include <array>
 #include <string>
-#include <vector>
 #include <SDL2/SDL.h>
 
 
@@ -20,13 +20,13 @@ public:
     using Coord  = unsigned int;
     using Pixels = unsigned int;
     using String = std::string;
-    using Sprite = std::vector <bool>;
+    using Sprite = std::array <bool,8>;
 
      Display (String title, Pixels width, Pixels height, Scale scale);
     ~Display ();
 
     void clear  ();
-    void draw   (const Sprite& sprite, Coord x, Coord y, unsigned height);
+    void draw   (const Sprite& sprite, Coord x, Coord y);
 
 private:
 
