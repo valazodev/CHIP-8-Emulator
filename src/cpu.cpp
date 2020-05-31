@@ -233,6 +233,8 @@ void CPU::reg_load (uint8_t top_index)
 
 void CPU::execute_opcode ()
 {
+    auto t0 = clock();
+
     auto old_pc = program_counter;
     uint16_t opcode = fetch_opcode();
 
@@ -354,6 +356,16 @@ void CPU::execute_opcode ()
     }
 
     }
+    --sound_timer;
+    --delay_timer;
+
     if (old_pc == program_counter)
         program_counter += 2;
+
+    auto t1 = clock();
+    auto dif = t1-t0;
+
+    if (dif < clocks_per_update) {
+        SDL_Delay(1);
+    }
 }
