@@ -289,15 +289,16 @@ void CPU::execute_opcode ()
         auto X = second_hex(opcode);
         auto Y = third_hex(opcode);
         auto N = fourth_hex(opcode);
-        if (N == 0x00) data_reg[X] = data_reg[Y];  else
-        if (N == 0x01) data_reg[X] |= data_reg[Y]; else
-        if (N == 0x02) data_reg[X] &= data_reg[Y]; else
-        if (N == 0x03) data_reg[X] ^= data_reg[Y]; else
-        if (N == 0x04) data_reg[X] = add      (data_reg[X], data_reg[Y]); else
-        if (N == 0x05) data_reg[X] = subtract (data_reg[X], data_reg[Y]); else
-        if (N == 0x06) data_reg[X] = rshift   (data_reg[X]);              else
-        if (N == 0x07) data_reg[X] = subtract (data_reg[Y], data_reg[X]); else
-        if (N == 0x0E) data_reg[X] = lshift   (data_reg[X]);
+
+             if (N == 0x00) data_reg[X] = data_reg[Y];
+        else if (N == 0x01) data_reg[X] |= data_reg[Y];
+        else if (N == 0x02) data_reg[X] &= data_reg[Y];
+        else if (N == 0x03) data_reg[X] ^= data_reg[Y];
+        else if (N == 0x04) data_reg[X] = add      (data_reg[X], data_reg[Y]);
+        else if (N == 0x05) data_reg[X] = subtract (data_reg[X], data_reg[Y]);
+        else if (N == 0x06) data_reg[X] = rshift   (data_reg[X]);
+        else if (N == 0x07) data_reg[X] = subtract (data_reg[Y], data_reg[X]);
+        else if (N == 0x0E) data_reg[X] = lshift   (data_reg[X]);
         break;
     }
     case 0x9: {
@@ -332,29 +333,27 @@ void CPU::execute_opcode ()
     case 0xE: {
         auto X = second_hex(opcode);
         if ((opcode & 0x00FF) == 0x009E)
-            if(key() == data_reg[X])
+            if(display.last_key() == data_reg[X])
                 skip_next_opcode();
         if ((opcode & 0x00FF) == 0x00A1)
-            if(key() != data_reg[X])
+            if(display.last_key() != data_reg[X])
                 skip_next_opcode();
         break;
     }
-    case 0xF: {
+    case 0xF:
         auto& I = address_reg;
         auto  X = second_hex(opcode);
         auto  second_byte = opcode & 0x00FF;
-        if (second_byte == 0x07) data_reg[X] = delay_timer;  else
-        if (second_byte == 0x0A) data_reg[X] = get_key();    else
-        if (second_byte == 0x15) delay_timer = data_reg[X];  else
-        if (second_byte == 0x18) sound_timer = data_reg[X];  else
-        if (second_byte == 0x1E) I = add_16(I, data_reg[X]); else
-        if (second_byte == 0x29) I = get_font_address (data_reg[X]); else
-        if (second_byte == 0x33) set_BCD (data_reg[X]); else
-        if (second_byte == 0x55) reg_dump (X); else
-        if (second_byte == 0x65) reg_load (X);
-        break;
-    }
 
+             if (second_byte == 0x07) data_reg[X] = delay_timer;
+        else if (second_byte == 0x0A) data_reg[X] = display.get_key();
+        else if (second_byte == 0x15) delay_timer = data_reg[X];
+        else if (second_byte == 0x18) sound_timer = data_reg[X];
+        else if (second_byte == 0x1E) I = add_16(I, data_reg[X]);
+        else if (second_byte == 0x29) I = get_font_address (data_reg[X]);
+        else if (second_byte == 0x33) set_BCD (data_reg[X]);
+        else if (second_byte == 0x55) reg_dump (X);
+        else if (second_byte == 0x65) reg_load (X);
     }
     --sound_timer;
     --delay_timer;

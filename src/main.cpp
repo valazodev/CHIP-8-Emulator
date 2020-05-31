@@ -1,9 +1,8 @@
-#include <iostream>
+#include <CHIP-8/cpu.h>
 
-using namespace std;
-
-int main()
+int main(int argc, char *argv[])
 {
-    cout << "Hello World!" << endl;
+    CPU cpu;
+    cpu.open_rom("../Pong.ch8");
     return 0;
 }

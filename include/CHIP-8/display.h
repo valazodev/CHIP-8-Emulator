@@ -25,8 +25,10 @@ public:
      Display (String title, Pixels width, Pixels height, Scale scale);
     ~Display ();
 
-    void clear  ();
-    void draw   (const Sprite& sprite, Coord x, Coord y);
+    void    clear    ();
+    void    draw     (const Sprite& sprite, Coord x, Coord y);
+    uint8_t get_key  ();
+    uint8_t last_key ();
 
 private:
 
@@ -42,9 +44,10 @@ private:
 
     SDL_Window* window;
     SDL_Renderer* renderer;
+    uint8_t last_key_value;
 
-    void init_SDL ();
-    void render   (SDL_Rect area, RGBA color);
+    void    init_SDL ();
+    void    render   (SDL_Rect area, RGBA color);
 };
 
 

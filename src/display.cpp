@@ -35,6 +35,7 @@ void Display::clear ()
 {
     SDL_RenderSetViewport(renderer, nullptr);
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
 }
 
@@ -93,3 +94,51 @@ void Display::render(SDL_Rect area, RGBA color)
     SDL_RenderSetViewport(renderer, &area);
     SDL_RenderPresent(renderer);
 }
+
+uint8_t Display::get_key()
+{
+    SDL_Event e;
+    while (SDL_PollEvent( &e ) != 0) {
+        if (e.key.type == SDL_KEYDOWN) {
+            switch (e.key.keysym.sym) {
+                case SDLK_1: last_key_value = 0x1; break;
+                case SDLK_2: last_key_value = 0x2; break;
+                case SDLK_3: last_key_value = 0x3; break;
+                case SDLK_4: last_key_value = 0xC; break;
+                case SDLK_q: last_key_value = 0x4; break;
+                case SDLK_w: last_key_value = 0x5; break;
+                case SDLK_e: last_key_value = 0x6; break;
+                case SDLK_r: last_key_value = 0xD; break;
+                case SDLK_a: last_key_value = 0x7; break;
+                case SDLK_s: last_key_value = 0x8; break;
+                case SDLK_d: last_key_value = 0x9; break;
+                case SDLK_f: last_key_value = 0xE; break;
+                case SDLK_z: last_key_value = 0xA; break;
+                case SDLK_x: last_key_value = 0x0; break;
+                case SDLK_c: last_key_value = 0xB; break;
+                case SDLK_v: last_key_value = 0xF; break;
+            }
+            return last_key_value;
+        }
+    }
+    // Impossible return
+    return 0xFF;
+}
+
+uint8_t Display::last_key()
+{
+    return last_key_value;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

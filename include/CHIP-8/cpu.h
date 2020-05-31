@@ -30,8 +30,8 @@ private:
     uint16_t program_counter;
 
     const Hz freq = 500;
-    const clock_t clocks_per_update = CLOCKS_PER_SEC / freq;
     const clock_t ms_per_update = 1000 / freq;
+    const clock_t clocks_per_update = CLOCKS_PER_SEC / freq;
 
     std::array <uint8_t,16>    data_reg;
     std::array <uint8_t,4096>  memory;
