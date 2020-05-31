@@ -66,6 +66,10 @@ private:
     /* DONE */ uint8_t   lshift    (uint8_t num);
     /* DONE */ uint8_t   rshift    (uint8_t num);
     /* DONE */ uint16_t  add_16    (uint16_t a, uint16_t b);
+
+    void  set_BCD   (uint8_t binary);
+    void  reg_dump  (uint8_t top_index);
+    void  reg_load  (uint8_t top_index);
 };
 
 #endif // CPU_H

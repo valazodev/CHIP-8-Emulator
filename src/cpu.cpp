@@ -208,6 +208,29 @@ void CPU::draw_sprite (uint8_t x, uint8_t y, uint8_t height)
     }
 }
 
+void CPU::set_BCD (uint8_t binary)
+{
+    memory[address_reg + 0] = binary / 100;
+    binary %= 100;
+
+    memory[address_reg + 1] = binary / 10;
+    binary %= 10;
+
+    memory[address_reg + 2] = binary / 1;
+}
+
+void CPU::reg_dump (uint8_t top_index)
+{
+    for (uint8_t i=0; i<=top_index; ++i)
+        memory[address_reg + i] = data_reg[i];
+}
+
+void CPU::reg_load (uint8_t top_index)
+{
+    for (uint8_t i=0; i<=top_index; ++i)
+        data_reg[i] = memory[address_reg + i];
+}
+
 void CPU::execute_opcode ()
 {
     auto old_pc = program_counter;
@@ -318,15 +341,15 @@ void CPU::execute_opcode ()
         auto& I = address_reg;
         auto  X = second_hex(opcode);
         auto  second_byte = opcode & 0x00FF;
-        if (second_byte == 0x07) data_reg[X] = delay_timer;         else
-        if (second_byte == 0x0A) data_reg[X] = get_key();           else
-        if (second_byte == 0x15) delay_timer = data_reg[X];         else
-        if (second_byte == 0x18) sound_timer = data_reg[X];         else
-        if (second_byte == 0x1E) I = add_16(I, data_reg[X]);        else
-        if (second_byte == 0x29) I = get_font_address(data_reg[X]); else
-        if (second_byte == 0x33);
-        if (second_byte == 0x55);
-        if (second_byte == 0x65);
+        if (second_byte == 0x07) data_reg[X] = delay_timer;  else
+        if (second_byte == 0x0A) data_reg[X] = get_key();    else
+        if (second_byte == 0x15) delay_timer = data_reg[X];  else
+        if (second_byte == 0x18) sound_timer = data_reg[X];  else
+        if (second_byte == 0x1E) I = add_16(I, data_reg[X]); else
+        if (second_byte == 0x29) I = get_font_address (data_reg[X]); else
+        if (second_byte == 0x33) set_BCD (data_reg[X]); else
+        if (second_byte == 0x55) reg_dump (X); else
+        if (second_byte == 0x65) reg_load (X);
         break;
     }
 
