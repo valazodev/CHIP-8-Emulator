@@ -47,7 +47,7 @@ void CPU::load_fonts()
 
 void CPU::open_rom (std::string path)
 {
-    std::ifstream rom(path);
+    std::ifstream rom(path, std::ios::binary);
     if (!rom.is_open())
         return;
 
@@ -56,7 +56,10 @@ void CPU::open_rom (std::string path)
         data = 0x0000;
 
     // Carga el rom a la memoria
-    for (size_t i=512; rom>>memory[i]; ++i)
+    char byte;
+    for (size_t i=512; rom.get(byte); ++i) {
+        memory[i] = uint8_t(byte);
+    }
 
     program_counter = 512;
     stack_pointer = 0x0EA0;
@@ -237,6 +240,9 @@ void CPU::execute_opcode ()
 
     auto old_pc = program_counter;
     uint16_t opcode = fetch_opcode();
+
+    SDL_Event e;
+    SDL_PollEvent( &e );
 
     // Tabla de opcodes
     switch( first_hex(opcode) )

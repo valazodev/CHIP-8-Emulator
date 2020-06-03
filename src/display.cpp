@@ -59,6 +59,7 @@ void Display::draw (const Sprite& sprite, Coord x, Coord y)
         else
             render(pixel, black);
     }
+    SDL_RenderPresent(renderer);
 }
 
 void Display::init_SDL()
@@ -91,8 +92,7 @@ void Display::init_SDL()
 void Display::render(SDL_Rect area, RGBA color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderSetViewport(renderer, &area);
-    SDL_RenderPresent(renderer);
+    SDL_RenderFillRect(renderer, &area);
 }
 
 uint8_t Display::get_key()
