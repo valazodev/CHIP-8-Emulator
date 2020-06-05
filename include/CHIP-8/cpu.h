@@ -6,111 +6,102 @@
 #include <string>
 #include <vector>
 
-#include <CHIP-8/display.h>
+#include <CHIP-8/io.h>
 
 class CPU
 {
 public:
     CPU();
     void open_rom(std::string path);
+    [[noreturn]] void run();
 
 private:
+    /* Containers */
+    template <typename T>
+    using vec = std::vector <T>;
+    template <typename T, size_t SIZE>
+    using arr = std::array <T, SIZE>;
 
+    /* Types */
     using u8 = uint8_t;
     using u16 = uint16_t;
-    using Font = std::array <u8,5>;
-    using vec = std::vector <u8>;
-    using Hz = unsigned;
 
+    /* Constants */
     const u8 width = 64;
     const u8 height = 32;
-
-    Display display;
-
-    u8 DT;
-    u8 ST;
-    u16 I;
-    u16 SP;
-    u16 PC;
-
-    const Hz freq = 500;
+    const unsigned freq = 500;
     const clock_t ms_per_update = 1000 / freq;
     const clock_t clocks_per_update = CLOCKS_PER_SEC / freq;
+    const clock_t CLOCKS_PER_MS = CLOCKS_PER_SEC / 1000;
 
-    std::array <u8,16>    V;
-    std::array <u8,4096>  RAM;
+    /* Components */
+    IO io;
 
-    // Byte splitters
-    u8    first_hex       (const u16& opcode);
-    u8    second_hex      (const u16& opcode);
-    u8    third_hex       (const u16& opcode);
-    u8    fourth_hex      (const u16& opcode);
-    auto  byte_to_sprite  (const u8& byte);
+    u8  DT;   // Delay timer
+    u8  ST;   // Sound timer
+    u16 SP;   // Stack pointer
+    u16 I;    // Address register
+    u16 PC;   // Program counter
 
-    /* Opcodes */
-    void      execute_opcode  ();
-    u16  fetch_opcode    ();
+    arr <u8,16>   V;     // Data register
+    arr <u8,4096> RAM;   // Random-access memory
 
-    /* Display */
-    void draw_sprite (u8 x, u8 y, u8 height);
+    /* Data */
+    u16 opcode;
 
-    /* BCD */
-    void  set_BCD   (u8 binary);
+    /* Clocks */
+    clock_t timers_clock;
 
-    /* Fonts */
-    u16  get_font_address  (u8 hex_value);
-    void      load_symbol       (u16 address, Font values);
-    void      load_fonts        ();
+    /* Helpers */
+    void init_fonts  ();
+    auto byte2sprite (const u8& byte);
+    void uint2str    (u16 val, char* str);
+    bool matches     (const char* opcode, const char* pattern);
+
+    /* Control unit */
+    void fetch   ();
+    void execute ();
 
     /* Stack operations */
-    u16  stack_top   ();
-    void      stack_pop   ();
-    void      stack_push  (u16 address);
+    u16  stack_top  ();
+    void stack_pop  ();
+    void stack_push (u16 address);
 
-    /* Register operations */
-    void  reg_dump  (u8 top_index);
-    void  reg_load  (u8 top_index);
+    /* Timer operations */
+    void update_timers ();
 
-    /* Flow instructions */
-    void  call_subroutine   (u16 address);
-    void  jump_to           (u16 address);
-    void  return_from_call  ();
-    void  skip_next_opcode  ();
+    /* Assembler subroutines */
+    void ADD  (u16 &a, u16 b);
+    void ADD  (u8 &a, u8 b);
+    void AND  (u8 &a, u8 b);
+    void CALL (u16 addr);
+    void CLS  ();
+    void DRW  (u8 x, u8 y, u8 nibble);
+    void RET  ();
+    void SYS  (u16 addr);
+    void JP   (u16 addr);
+    void JP   (u8 offset, u16 addr);
+    void LD   (vec<u8> range, u16 addr);
+    void LD   (u16 addr, vec<u8> range);
+    void LD   (u16 &a, u16 b);
+    void LD   (u8 &a, u8 b);
+    void SUB  (u8 &a, u8 b);
+    void SUBN (u8 &a, u8 b);
+    void OR   (u8 &a, u8 b);
+    void XOR  (u8 &a, u8 b);
+    void RND  (u8 &a, u8 b);
+    void SE   (u8 a, u8 b);
+    void SNE  (u8 a, u8 b);
+    void SHL  (u8 &val);
+    void SHR  (u8 &val);
+    void SKP  (u8 key);
+    void SKNP (u8 key);
 
-    /* Operations involving carry/borrow */
-    u8   add       (u8 a, u8 b);
-    u8   subtract  (u8 a, u8 b);
-    u8   lshift    (u8 num);
-    u8   rshift    (u8 num);
-    u16  add_16    (u16 a, u16 b);
-
-    // Assembler subroutines
-    void  CLS   ();
-    void  RET   ();
-    void  SYS   (u16 addr);
-    void  CALL  (u16 addr);
-    void  JP    (u16 addr);
-    void  JP    (u8 offset, u16 addr);
-    void  DRW   (u8 x, u8 y, u8 nibble);
-    void  LD    (u16 addr, vec bcd);
-    void  LD    (u16 &a, u16 b);
-    void  ADD   (u16 &a, u16 b);
-    void  SUB   (u8 &a, u8 b);
-    void  SUBN  (u8 &a, u8 b);
-    void  OR    (u8 &a, u8 b);
-    void  AND   (u8 &a, u8 b);
-    void  XOR   (u8 &a, u8 b);
-    void  SE    (u8 a, u8 b);
-    void  SNE   (u8 a, u8 b);
-    void  SHL   (u8 &val);
-    void  SHR   (u8 &val);
-    void  RND   (u8 &a, u8 b);
-    void  SKP   (u8 key);
-    void  SKNP  (u8 key);
-
-    // Helper pseudo-subroutines
-    vec   BCD   (u8 bin);
-    void  ADDC  (u8 &a, u8 b);
+    /* Helper pseudo-subroutines */
+    vec<u8> BCD  (u8 bin);
+    u16     FONT (u8 digit);
+    u8      KEY  ();
+    vec<u8> RNGV (u8 lower_bound, u8 upper_bound);
 
 };
 
