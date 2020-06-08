@@ -5,21 +5,24 @@
 #include <ctime>
 
 // Headers STL
+#include <bitset>
+#include <iostream>
 #include <fstream>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
 using namespace std;
 
-CPU::CPU(): io(IO("CHIP-8 Emulator", width, height, 20))
+CPU::CPU(): io(IO("CHIP-8 Emulator", width, height, 15))
 {
     PC = 0x200;
     SP = 0x0EA0;
     timers_clock = clock();
 
-    init_fonts();
     for (auto &data : RAM)
         data = 0x00;
+
+    init_fonts();
 }
 
 void CPU::init_fonts ()
@@ -50,7 +53,7 @@ void CPU::open_rom (string path)
 
     // Carga el rom a la memoria
     char byte;
-    for (size_t i=512; rom.get(byte); ++i)
+    for (size_t i=0x200; rom.get(byte); ++i)
         RAM[i] = u8(byte);
 }
 
@@ -65,9 +68,8 @@ auto CPU::byte2sprite(const u8& byte)
 
 u16 CPU::stack_top ()
 {
-    auto& sp = SP;
-    auto first  = u16(RAM[sp]);
-    auto second = u16(RAM[sp+1]);
+    auto first  = u16(RAM[SP - 2]);
+    auto second = u16(RAM[SP - 1]);
     auto top = u16((first << 8) | second);
     return top;
 }
@@ -79,9 +81,9 @@ void CPU::stack_pop ()
 
 void CPU::stack_push (u16 address)
 {
-    SP += 2;
     RAM[SP + 0] = address >> 8;
     RAM[SP + 1] = address & 0x00FF;
+    SP += 2;
 }
 
 void CPU::uint2str (u16 val, char* str)
@@ -191,10 +193,10 @@ void CPU::execute ()
 
 void CPU::update_timers ()
 {
-    clock_t delta = (clock() - timers_clock) / CLOCKS_PER_MS;
+    clock_t delta = (clock() - timers_clock);
 
-    if (delta < 16)
-        SDL_Delay(unsigned(16 - delta));
+   if (delta < CLOCKS_PER_MS)
+        SDL_Delay(unsigned(2 - delta));
 
     timers_clock = clock();
     if (DT > 0) --DT;
@@ -222,7 +224,8 @@ void CPU::SYS (u16 addr)
 {
     // Calls system subroutine (not implemented)
 
-    addr = 0x00;
+    auto stop_warning_from_compiler = addr;
+    stop_warning_from_compiler++;
 }
 
 void CPU::CALL (u16 addr)
@@ -251,21 +254,42 @@ void CPU::DRW (u8 x, u8 y, u8 n)
 {
     // Draws sprite to screen
 
-    u16 screen = 0x0F00 + (8 * y) + x;
-
     V[0xF] = 0x00;
-    for (unsigned offset=0; offset<n; ++offset)
+    for (u16 j=0; j<n; ++j)
     {
-        u8 written = RAM[screen + (8 * offset)];
-        u8 writer = RAM[I + offset];
+        u16 row = 0x0F00 + 8 * (y + j);
+        u8 writer = RAM[I + j];
+        IO::Sprite sprite;
 
-        // Bit flipped from set to unset
-        if ((written & writer) > 0x00)
-            V[0xF] = 0x01;
+        if (x%8 == 0) {
+            u8& written = RAM[row + x/8];
 
-        written ^= writer;
-        auto sprite = byte2sprite(written);
-        io.draw(sprite, x, y + offset);
+            // Bit flipped from set to unset
+            if ((written & writer) > 0x00)
+                V[0xF] = 0x01;
+
+            written ^= writer;
+            sprite = byte2sprite(written);
+        }
+        else {
+            u8& first  = RAM[row + x/8 + 0];
+            u8& second = RAM[row + x/8 + 1];
+            u16 pair = u16(first << 8 | second);
+            u8 written = (pair >> (8 - x%8)) & 0x00FF;
+
+            // Bit flipped from set to unset
+            if ((written & writer) > 0x00)
+                V[0xF] = 0x01;
+
+            written ^= writer;
+            pair &= (0x00 << (8 - x%8));
+            pair |= (written << (8 - x%8));
+
+            first = pair >> 8;
+            second = pair & 0x00FF;
+            sprite = byte2sprite(written);
+        }
+        io.draw(sprite, x, y + j);
     }
 }
 
@@ -283,12 +307,32 @@ void CPU::LD (u8 &a, u8 b)
     a = b;
 }
 
+void CPU::LD (u16 addr, vec<u8*> range)
+{
+    // Loads values to multiple addresses
+
+    for (u16 i=0; i<range.size(); ++i)
+        RAM[addr + i] = *range[i];
+
+    //I += range.size();
+}
+
 void CPU::LD (u16 addr, vec<u8> range)
 {
     // Loads values to multiple addresses
 
     for (u16 i=0; i<range.size(); ++i)
         RAM[addr + i] = range[i];
+}
+
+void CPU::LD (vec<u8*> range, u16 addr)
+{
+    // Loads values to multiple addresses
+
+    for (u16 i=0; i<range.size(); ++i)
+        *range[i] = RAM[addr + i];
+
+    //I += range.size();
 }
 
 void CPU::LD (vec<u8> range, u16 addr)
@@ -451,13 +495,13 @@ u8 CPU::KEY ()
     return io.wait_key();
 }
 
-CPU::vec<u8> CPU::RNGV (u8 lower_bound, u8 upper_bound)
+CPU::vec<u8*> CPU::RNGV (u8 lower_bound, u8 upper_bound)
 {
     // Returns the range between Va and Vb as a vector
 
-    vec<u8> range(upper_bound - lower_bound + 1);
+    vec<u8*> range(upper_bound - lower_bound + 1);
     for (u8 i=lower_bound; i<=upper_bound; ++i)
-        range[i] = V[i];
+        range[i] = &V[i];
 
     return range;
 }

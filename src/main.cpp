@@ -4,13 +4,11 @@
 
 int main(int argc, char *argv[])
 {
+    /*Disassembler d;
+    d.open_file("../Test.ch8");
+    d.run();*/
+
     CPU cpu;
     cpu.open_rom("../Pong.ch8");
     cpu.run();
-    /*
-    Disassembler d;
-    d.open_file("../Pong.ch8");
-    d.run();
-    */
-    return 0;
 }

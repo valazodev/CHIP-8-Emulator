@@ -34,7 +34,7 @@ IO::RGBA::RGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) :
 
 void IO::clear ()
 {
-    SDL_RenderSetViewport(renderer, nullptr);
+    //SDL_RenderSetViewport(renderer, nullptr);
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
@@ -42,17 +42,15 @@ void IO::clear ()
 
 void IO::draw (const Sprite& sprite, Coord x, Coord y)
 {
-    auto width = unsigned(8);
-
     SDL_Rect pixel;
     pixel.y = int(y * scale.y);
-    pixel.h = int(height * scale.x);
-    pixel.w = int(width * scale.y);
+    pixel.h = int(scale.x);
+    pixel.w = int(scale.y);
 
-    const RGBA black(0x00,0x00,0x00,0x00);
+    const RGBA black(0x00,0x00,0x00,0xFF);
     const RGBA white(0xFF,0xFF,0xFF,0xFF);
 
-    for (unsigned col=0; col<width; ++col) {
+    for (unsigned col=0; col<8; ++col) {
         pixel.x = int((x + col) * scale.x);
 
         if (sprite[col])
@@ -98,6 +96,7 @@ void IO::render(SDL_Rect area, RGBA color)
 
     SDL_SetRenderDrawColor(renderer, r, g, b, a);
     SDL_RenderFillRect(renderer, &area);
+    SDL_RenderPresent(renderer);
 }
 
 uint8_t IO::wait_key()
@@ -118,7 +117,7 @@ void IO::update()
     SDL_PollEvent( &event );
 
     if (event.type == SDL_QUIT)
-        exit(EXIT_FAILURE);
+        exit(EXIT_SUCCESS);
 
     if (event.key.type == SDL_KEYDOWN && !key_pressed) {
         switch (event.key.keysym.sym) {

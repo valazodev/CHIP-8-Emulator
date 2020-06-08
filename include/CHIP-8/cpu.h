@@ -13,7 +13,8 @@ class CPU
 public:
     CPU();
     void open_rom(std::string path);
-    [[noreturn]] void run();
+    // [[noreturn]]
+    void run();
 
 private:
     /* Containers */
@@ -81,7 +82,9 @@ private:
     void SYS  (u16 addr);
     void JP   (u16 addr);
     void JP   (u8 offset, u16 addr);
+    void LD   (vec<u8*> range, u16 addr);
     void LD   (vec<u8> range, u16 addr);
+    void LD   (u16 addr, vec<u8*> range);
     void LD   (u16 addr, vec<u8> range);
     void LD   (u16 &a, u16 b);
     void LD   (u8 &a, u8 b);
@@ -98,10 +101,10 @@ private:
     void SKNP (u8 key);
 
     /* Helper pseudo-subroutines */
-    vec<u8> BCD  (u8 bin);
-    u16     FONT (u8 digit);
-    u8      KEY  ();
-    vec<u8> RNGV (u8 lower_bound, u8 upper_bound);
+    vec<u8>  BCD  (u8 bin);
+    u16      FONT (u8 digit);
+    u8       KEY  ();
+    vec<u8*> RNGV (u8 lower_bound, u8 upper_bound);
 
 };
 

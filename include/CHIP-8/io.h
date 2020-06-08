@@ -15,7 +15,6 @@ public:
         Scale (float value);
         Scale (float x_scale, float y_scale);
     };
-
     using Coord  = unsigned int;
     using Pixels = unsigned int;
     using String = std::string;
@@ -35,7 +34,6 @@ private:
         uint8_t r, g, b, a;
         RGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
     };
-
     // Display
     String title;
     Pixels width;

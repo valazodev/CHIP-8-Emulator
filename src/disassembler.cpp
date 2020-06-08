@@ -7,6 +7,7 @@ using namespace std;
 
 struct Disassembler::Impl {
     ifstream file;
+    uint32_t cont = 512;
     void execute(uint16_t opcode);
     string type(uint16_t opcode);
     bool comp(string a, string b);
@@ -99,6 +100,9 @@ void Disassembler::Impl::execute(uint16_t opcode)
     char Vx[3] = {'V', op[1], '\0'};
     char Vy[3] = {'V', op[2], '\0'};
 
+    printf("%04X - ", cont);
+    cont += 2;
+
          if (comp(op,"00E0")) printf( "CLS" );
     else if (comp(op,"00EE")) printf( "RET" );
     else if (comp(op,"0nnn")) printf( "SYS  %s" , addr);
@@ -122,7 +126,7 @@ void Disassembler::Impl::execute(uint16_t opcode)
     else if (comp(op,"Annn")) printf( "LD   I , %s" , addr);
     else if (comp(op,"Bnnn")) printf( "JP   V0, %s" , addr);
     else if (comp(op,"Cxnn")) printf( "RND  %s, %s" , Vx, byte);
-    else if (comp(op,"Dxyn")) printf( "DRW  %s, %s, %c" , Vx, Vy, nibble);
+    else if (comp(op,"Dxyn")) printf( "DRW  %s, %s, %c", Vx, Vy, nibble);
     else if (comp(op,"Ex9E")) printf( "SKP  %s" , Vx);
     else if (comp(op,"ExA1")) printf( "SKNP %s" , Vx);
     else if (comp(op,"Fx07")) printf( "LD   %s, DT"  , Vx);
