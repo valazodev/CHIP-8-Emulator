@@ -9,6 +9,6 @@ int main(int argc, char *argv[])
     d.run();*/
 
     CPU cpu;
-    cpu.open_rom("../Pong.ch8");
+    cpu.open_rom("../Test.ch8");
     cpu.run();
 }

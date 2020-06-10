@@ -34,7 +34,6 @@ IO::RGBA::RGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) :
 
 void IO::clear ()
 {
-    //SDL_RenderSetViewport(renderer, nullptr);
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
@@ -68,8 +67,8 @@ void IO::init_SDL()
 
     window = SDL_CreateWindow(
         title.c_str(),
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
         int(width * scale.x),
         int(height * scale.y),
         SDL_WINDOW_SHOWN);
@@ -107,9 +106,12 @@ uint8_t IO::wait_key()
     return key_value;
 }
 
-uint8_t IO::last_key()
+uint16_t IO::last_key()
 {
-    return key_value;
+    if (key_pressed)
+        return key_value;
+    else
+        return 0xFF;
 }
 
 void IO::update()

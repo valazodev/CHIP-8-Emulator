@@ -23,4 +23,5 @@ target_sources(CHIP-8 PRIVATE
     src/cpu.cpp
     src/disassembler.cpp
     src/io.cpp
+    src/timer.cpp
 )

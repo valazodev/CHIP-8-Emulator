@@ -1,13 +1,8 @@
 #include <CHIP-8/cpu.h>
-
-// Headers C
-#include <cstdlib>
-#include <ctime>
-
-// Headers STL
 #include <bitset>
-#include <iostream>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -17,7 +12,7 @@ CPU::CPU(): io(IO("CHIP-8 Emulator", width, height, 15))
 {
     PC = 0x200;
     SP = 0x0EA0;
-    timers_clock = clock();
+    timer.start();
 
     for (auto &data : RAM)
         data = 0x00;
@@ -117,6 +112,7 @@ bool CPU::matches(const char* opcode, const char* pattern)
 void CPU::run()
 {
     while (true) {
+        io.update();
         fetch();
         execute();
         update_timers();
@@ -193,14 +189,13 @@ void CPU::execute ()
 
 void CPU::update_timers ()
 {
-    clock_t delta = (clock() - timers_clock);
+    // cout << timer.getTime() << " us\n";
 
-   if (delta < CLOCKS_PER_MS)
-        SDL_Delay(unsigned(2 - delta));
-
-    timers_clock = clock();
-    if (DT > 0) --DT;
-    if (ST > 0) --ST;
+    if (timer.getTime() > 1000000/60) {
+        if (DT > 0) --DT;
+        if (ST > 0) --ST;
+        timer.start();
+    }
 }
 
 void CPU::CLS ()
