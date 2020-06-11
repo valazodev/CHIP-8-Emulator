@@ -12,7 +12,8 @@ CPU::CPU(): io(IO("CHIP-8 Emulator", width, height, 15))
 {
     PC = 0x200;
     SP = 0x0EA0;
-    timer.start();
+    cpu_timer.start();
+    delay_timer.start();
 
     for (auto &data : RAM)
         data = 0x00;
@@ -55,9 +56,14 @@ void CPU::open_rom (string path)
 auto CPU::byte2sprite(const u8& byte)
 {
     IO::Sprite sprite;
-    for (u8 i=0; i<8; ++i)
-        sprite[i] = bool( (byte >> (7-i)) & 0x01 );
 
+    for (u8 i=0; i<8; ++i) {
+        bool bit = (byte >> (7-i)) & 0x01;
+        if (bit)
+            sprite[i] = 0xFFFFFFFF;
+        else
+            sprite[i] = 0x000000FF;
+    }
     return sprite;
 }
 
@@ -191,10 +197,16 @@ void CPU::update_timers ()
 {
     // cout << timer.getTime() << " us\n";
 
-    if (timer.getTime() > 1000000/60) {
+    while (cpu_timer.getTime() < 1000000/500) {
+        if (cpu_timer.getTime() < 1000)
+            SDL_Delay(1);
+    }
+    cpu_timer.start();
+
+    if (delay_timer.getTime() > 1000000/60) {
         if (DT > 0) --DT;
         if (ST > 0) --ST;
-        timer.start();
+        delay_timer.start();
     }
 }
 

@@ -46,7 +46,8 @@ private:
     /* Emulation */
     IO io;
     u16 opcode;
-    Timer<micro> timer;
+    Timer<micro> cpu_timer;
+    Timer<micro> delay_timer;
 
     /* Helpers */
     void init_fonts  ();

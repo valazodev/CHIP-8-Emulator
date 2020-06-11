@@ -1,19 +1,26 @@
 #include <CHIP-8/io.h>
-
 #include <stdexcept>
+
+using namespace std;
 
 IO::IO (String title, Pixels width, Pixels height, Scale scale) :
     title(title), width(width), height(height), scale(scale)
 {
     init_SDL();
-    clear();
+
+    pixels.reserve(width * height);
+    for (unsigned i=0; i<pixels.capacity(); ++i)
+        pixels[i] = 0;
+
     key_pressed = false;
+    clear();
 }
 
 IO::~IO ()
 {
-    SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
@@ -37,33 +44,40 @@ void IO::clear ()
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
+
+    for (unsigned i=0; i<pixels.capacity(); ++i)
+        pixels[i] = 0;
 }
 
 void IO::draw (const Sprite& sprite, Coord x, Coord y)
 {
-    SDL_Rect pixel;
-    pixel.y = int(y * scale.y);
-    pixel.h = int(scale.x);
-    pixel.w = int(scale.y);
-
-    const RGBA black(0x00,0x00,0x00,0xFF);
-    const RGBA white(0xFF,0xFF,0xFF,0xFF);
-
-    for (unsigned col=0; col<8; ++col) {
-        pixel.x = int((x + col) * scale.x);
-
-        if (sprite[col])
-            render(pixel, white);
-        else
-            render(pixel, black);
+    for (unsigned col=0; col<sprite.size(); ++col) {
+        auto index = (width * y) + (x + col);
+        pixels[index] = sprite[col];
     }
+    SDL_UpdateTexture(
+        texture,
+        nullptr,
+        &pixels[0],
+        int(width * 4));
+
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
+}
+
+void IO::assert(bool expr, string error_msg)
+{
+    if (!expr) {
+        error_msg += string("\nSDL_Error: ") + SDL_GetError();
+        throw runtime_error(error_msg);
+    }
 }
 
 void IO::init_SDL()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        throw std::runtime_error("No pudo inicializarse la libreria SDL.\n");
+    assert( SDL_Init(SDL_INIT_VIDEO) >= 0,
+            "No pudo inicializarse la libreria SDL.");
 
     window = SDL_CreateWindow(
         title.c_str(),
@@ -72,30 +86,18 @@ void IO::init_SDL()
         int(width * scale.x),
         int(height * scale.y),
         SDL_WINDOW_SHOWN);
+    assert(window, "No pudo crearse la ventana.");
 
-    if (!window) {
-        auto error = std::string("No pudo crearse la ventana. SDL_Error: ");
-        error += SDL_GetError();
-        throw std::runtime_error(error);
-    }
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        auto error = std::string("No pudo crearse el renderer. SDL_Error: ");
-        error += SDL_GetError();
-        throw std::runtime_error(error);
-    }
-}
+    assert(renderer, "No pudo crearse el renderizador.");
+    SDL_RenderSetScale( renderer, scale.x, scale.y );
 
-void IO::render(SDL_Rect area, RGBA color)
-{
-    auto& r = color.r;
-    auto& g = color.g;
-    auto& b = color.b;
-    auto& a = color.a;
-
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
-    SDL_RenderFillRect(renderer, &area);
-    SDL_RenderPresent(renderer);
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_STATIC,
+        int(width),
+        int(height));
 }
 
 uint8_t IO::wait_key()
@@ -106,7 +108,7 @@ uint8_t IO::wait_key()
     return key_value;
 }
 
-uint16_t IO::last_key()
+uint8_t IO::last_key()
 {
     if (key_pressed)
         return key_value;
