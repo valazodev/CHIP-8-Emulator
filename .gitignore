@@ -1,11 +1,5 @@
 CMakeLists.txt.user
 ASM.txt
-build/
+debug/
 release/
-Clock.ch8
-Maze.ch8
-Particle.ch8
-Pong.ch8
-Space.ch8
-Test.ch8
-Tetris.ch8
+roms/

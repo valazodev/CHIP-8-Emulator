@@ -23,11 +23,12 @@ public:
      IO (String title, Pixels width, Pixels height, Scale scale);
     ~IO ();
 
-    void    clear    ();
-    void    draw     (const Sprite& sprite, Coord x, Coord y);
-    uint8_t last_key ();
-    uint8_t wait_key ();
-    void    update   ();
+    void    clear           ();
+    bool    draw            (const Sprite& sprite, Coord x, Coord y);
+    uint8_t last_key        ();
+    void    refresh_display ();
+    uint8_t wait_key        ();
+    void    update          ();
 
 private:
     struct RGBA {

@@ -2,7 +2,6 @@
 #include <bitset>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -68,7 +67,7 @@ IO::Sprite to_sprite(const u8& byte)
         if (bit)
             sprite[i] = 0xFFFFFFFF;
         else
-            sprite[i] = 0x0000FFFF;
+            sprite[i] = 0x000000FF;
     }
     return sprite;
 }
@@ -105,9 +104,6 @@ bool CPU::matches(u16 opcode, const char* pattern)
 u8& CPU::screen_byte (u8 x, u8 y)
 {
     u16 index = (8 * y) + x;
-    if (index >= width/8 * height)
-        throw std::out_of_range("Sprite fuera de rango.");
-
     return (RAM[0xF00 + index]);
 }
 
@@ -278,53 +274,12 @@ void CPU::DRW (u8 x, u8 y, u8 n)
 
     V[0xF] = 0x00; // Flag
 
-    u8 wrap_x = x % width;
-    for (u8 j=0; j<n; ++j)
-    {
-        // Coordinates wrap around the screen
-        u8 wrap_x1 = (x/8 + 0) % 8;
-        u8 wrap_x2 = (x/8 + 1) % 8;
-        u8 wrap_y  = (y + j) % height;
-
-        u8 writer = RAM[I + j];
-        u8 written;
-
-        if (x%8 == 0) {
-            written = screen_byte(wrap_x1, wrap_y);
-
-            // Set flag if bit goes from set to unset
-            if ((written & writer) > 0x00)
-                V[0xF] = 0x01;
-
-            written ^= writer;
-            screen_byte(wrap_x1, wrap_y) = written;
-        }
-        else {
-            u8& first  = screen_byte(wrap_x1, wrap_y);
-            u8& second = screen_byte(wrap_x2, wrap_y);
-            u16 pair = u16(first << 8 | second);
-            written = (pair >> (8 - x%8)) & 0x00FF;
-
-            // Set flag if bit goes from set to unset
-            if ((written & writer) > 0x00)
-                V[0xF] = 0x01;
-
-            written ^= writer;
-
-            pair &= (0x00 << (8 - x%8));
-            pair |= (written << (8 - x%8));
-            first = pair >> 8;
-            second = pair & 0x00FF;
-        }
-        io.draw(to_sprite(written), wrap_x, wrap_y);
+    for (u8 row=0; row<n; ++row) {
+        u8 writer = RAM[I + row];
+        if (io.draw(to_sprite(writer), x, y + row))
+            V[0xF] = 0x01;
     }
-    for (u16 i=0xF00; i<=0xFFF; ++i) {
-        if (i%8 == 0)
-            cout << endl;
-
-        printf("%02X ",RAM[i]);
-    }
-    cout << endl;
+    io.refresh_display();
 }
 
 void CPU::LD (u16 &a, u16 b)
@@ -347,8 +302,6 @@ void CPU::LD (u16 addr, vec<u8*> range)
 
     for (u16 i=0; i<range.size(); ++i)
         RAM[addr + i] = *range[i];
-
-    I += range.size();
 }
 
 void CPU::LD (u16 addr, vec<u8> range)
@@ -365,8 +318,6 @@ void CPU::LD (vec<u8*> range, u16 addr)
 
     for (u16 i=0; i<range.size(); ++i)
         *range[i] = RAM[addr + i];
-
-    I += range.size();
 }
 
 void CPU::LD (vec<u8> range, u16 addr)

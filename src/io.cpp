@@ -10,7 +10,7 @@ IO::IO (String title, Pixels width, Pixels height, Scale scale) :
 
     pixels.resize(width * height);
     for (unsigned i=0; i<pixels.capacity(); ++i)
-        pixels[i] = 0;
+        pixels[i] = 0x000000FF;
 
     key_pressed = false;
     clear();
@@ -45,25 +45,30 @@ void IO::clear ()
     SDL_RenderPresent(renderer);
     SDL_RenderClear(renderer);
 
-    for (unsigned i=0; i<pixels.capacity(); ++i)
-        pixels[i] = 0;
+    for (unsigned i=0; i<pixels.size(); ++i)
+        pixels[i] = 0x000000FF;
 }
 
-void IO::draw (const Sprite& sprite, Coord x, Coord y)
+bool IO::draw (const Sprite& sprite, Coord x, Coord y)
 {
-    for (unsigned col=0; col<sprite.size(); ++col) {
-        unsigned index = (width * y) + (x + col);
-        pixels[index] = sprite[col];
-    }
-    SDL_UpdateTexture(
-        texture,
-        nullptr,
-        &pixels[0],
-        int(width * 4));
+    bool collision = false;
 
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-    SDL_RenderPresent(renderer);
+    for (unsigned col=0; col<sprite.size(); ++col)
+    {
+        auto wrap_x = (x + col) % width;
+        auto wrap_y = y % height;
+        unsigned index = (width * wrap_y) + wrap_x;
+
+        if (pixels[index] > 0xFF && sprite[col] > 0xFF)
+            collision = true;
+
+        if (pixels[index] != sprite[col])
+            pixels[index] = 0xFFFFFFFF;
+        else
+            pixels[index] = 0x000000FF;
+    }
+
+    return collision;
 }
 
 void IO::assert(bool expr, string error_msg)
@@ -98,6 +103,19 @@ void IO::init_SDL()
         SDL_TEXTUREACCESS_STATIC,
         int(width),
         int(height));
+}
+
+void IO::refresh_display()
+{
+    SDL_UpdateTexture(
+        texture,
+        nullptr,
+        &pixels[0],
+        int(width * 4));
+
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderPresent(renderer);
 }
 
 uint8_t IO::wait_key()

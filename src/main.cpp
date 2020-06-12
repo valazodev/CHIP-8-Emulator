@@ -3,6 +3,11 @@
 int main(int argc, char *argv[])
 {
     CPU cpu;
-    cpu.open_rom("../Pong.ch8");
+    std::string path;
+
+    // Escribir la ruta del rom entre las comillas
+    path = "";
+
+    cpu.open_rom(path);
     cpu.run();
 }
