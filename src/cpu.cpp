@@ -10,15 +10,21 @@ using namespace std;
 
 CPU::CPU(): io(IO("CHIP-8 Emulator", width, height, 15))
 {
+    DT = 0;
+    ST = 0;
+    I  = 0x0;
     PC = 0x200;
-    SP = 0x0EA0;
-    cpu_timer.start();
-    delay_timer.start();
+    SP = 0xEA0;
 
+    for (auto &data : V)
+        data = 0x00;
     for (auto &data : RAM)
         data = 0x00;
 
     init_fonts();
+
+    cpu_timer.start();
+    delay_timer.start();
 }
 
 void CPU::init_fonts ()
@@ -53,7 +59,7 @@ void CPU::open_rom (string path)
         RAM[i] = u8(byte);
 }
 
-auto CPU::byte2sprite(const u8& byte)
+IO::Sprite to_sprite(const u8& byte)
 {
     IO::Sprite sprite;
 
@@ -62,9 +68,47 @@ auto CPU::byte2sprite(const u8& byte)
         if (bit)
             sprite[i] = 0xFFFFFFFF;
         else
-            sprite[i] = 0x000000FF;
+            sprite[i] = 0x0000FFFF;
     }
     return sprite;
+}
+
+char to_char (const u8& hex)
+{
+    if (hex < 10)
+        return char(hex) + '0';
+
+    else if (hex >= 10 && hex < 16)
+        return char(hex) - 10 + 'A';
+
+    else
+        return char(0);
+}
+
+bool CPU::matches(u16 opcode, const char* pattern)
+{
+    for (auto i=0; i<4; ++i)
+    {
+        u8 nibble = u8(opcode >> 4*(3-i)) & 0x0F;
+
+        if (pattern[i] != 'n' &&
+            pattern[i] != 'x' &&
+            pattern[i] != 'y' &&
+            pattern[i] != to_char(nibble))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+u8& CPU::screen_byte (u8 x, u8 y)
+{
+    u16 index = (8 * y) + x;
+    if (index >= width/8 * height)
+        throw std::out_of_range("Sprite fuera de rango.");
+
+    return (RAM[0xF00 + index]);
 }
 
 u16 CPU::stack_top ()
@@ -87,50 +131,26 @@ void CPU::stack_push (u16 address)
     SP += 2;
 }
 
-void CPU::uint2str (u16 val, char* str)
-{
-    for (auto i=0; i<4; ++i)
-    {
-        u8 nibble = u8(val >> 4*(3-i)) & 0x0F;
-
-        if (nibble > 0x9)
-            str[i] = char(nibble) + 'A' - 10;
-        else
-            str[i] = char(nibble) + '0';
-    }
-    str[4] = '\0';
-}
-
-bool CPU::matches(const char* opcode, const char* pattern)
-{
-    for (auto i=0; i<4; ++i) {
-        if (pattern[i] != 'n' &&
-            pattern[i] != 'x' &&
-            pattern[i] != 'y' &&
-            pattern[i] != opcode[i])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-void CPU::run()
+void CPU::run ()
 {
     while (true) {
         io.update();
-        fetch();
-        execute();
+        auto opcode = fetch();
+        execute(opcode);
         update_timers();
+
+        if (PC >= 0xEA0)
+            exit(EXIT_FAILURE);
     }
 }
 
-void CPU::fetch ()
+u16 CPU::fetch ()
 {
-    opcode = u16(RAM[PC] << 8) | RAM[PC+1];
+    u16 opcode = u16(RAM[PC] << 8) | RAM[PC+1];
+    return opcode;
 }
 
-void CPU::execute ()
+void CPU::execute (u16 opcode)
 {
     u8  x    = (opcode >> 8) & 0x0F;
     u8  y    = (opcode >> 4) & 0x0F;
@@ -140,14 +160,11 @@ void CPU::execute ()
 
     auto last_PC = PC;
 
-    char opcode_str[5];
-    uint2str(opcode, opcode_str);
-
     #define SWITCH(expr)
-    #define CASE(expr) if (matches (opcode_str, expr))
+    #define CASE(expr) if (matches (opcode, expr))
     #define BREAK else
 
-    SWITCH(opcode_str)
+    SWITCH(opcode)
     {
         CASE("00E0") CLS  ();               BREAK
         CASE("00EE") RET  ();               BREAK
@@ -195,8 +212,6 @@ void CPU::execute ()
 
 void CPU::update_timers ()
 {
-    // cout << timer.getTime() << " us\n";
-
     while (cpu_timer.getTime() < 1000000/500) {
         if (cpu_timer.getTime() < 1000)
             SDL_Delay(1);
@@ -261,43 +276,55 @@ void CPU::DRW (u8 x, u8 y, u8 n)
 {
     // Draws sprite to screen
 
-    V[0xF] = 0x00;
-    for (u16 j=0; j<n; ++j)
+    V[0xF] = 0x00; // Flag
+
+    u8 wrap_x = x % width;
+    for (u8 j=0; j<n; ++j)
     {
-        u16 row = 0x0F00 + 8 * (y + j);
+        // Coordinates wrap around the screen
+        u8 wrap_x1 = (x/8 + 0) % 8;
+        u8 wrap_x2 = (x/8 + 1) % 8;
+        u8 wrap_y  = (y + j) % height;
+
         u8 writer = RAM[I + j];
-        IO::Sprite sprite;
+        u8 written;
 
         if (x%8 == 0) {
-            u8& written = RAM[row + x/8];
+            written = screen_byte(wrap_x1, wrap_y);
 
-            // Bit flipped from set to unset
+            // Set flag if bit goes from set to unset
             if ((written & writer) > 0x00)
                 V[0xF] = 0x01;
 
             written ^= writer;
-            sprite = byte2sprite(written);
+            screen_byte(wrap_x1, wrap_y) = written;
         }
         else {
-            u8& first  = RAM[row + x/8 + 0];
-            u8& second = RAM[row + x/8 + 1];
+            u8& first  = screen_byte(wrap_x1, wrap_y);
+            u8& second = screen_byte(wrap_x2, wrap_y);
             u16 pair = u16(first << 8 | second);
-            u8 written = (pair >> (8 - x%8)) & 0x00FF;
+            written = (pair >> (8 - x%8)) & 0x00FF;
 
-            // Bit flipped from set to unset
+            // Set flag if bit goes from set to unset
             if ((written & writer) > 0x00)
                 V[0xF] = 0x01;
 
             written ^= writer;
+
             pair &= (0x00 << (8 - x%8));
             pair |= (written << (8 - x%8));
-
             first = pair >> 8;
             second = pair & 0x00FF;
-            sprite = byte2sprite(written);
         }
-        io.draw(sprite, x, y + j);
+        io.draw(to_sprite(written), wrap_x, wrap_y);
     }
+    for (u16 i=0xF00; i<=0xFFF; ++i) {
+        if (i%8 == 0)
+            cout << endl;
+
+        printf("%02X ",RAM[i]);
+    }
+    cout << endl;
 }
 
 void CPU::LD (u16 &a, u16 b)
@@ -321,7 +348,7 @@ void CPU::LD (u16 addr, vec<u8*> range)
     for (u16 i=0; i<range.size(); ++i)
         RAM[addr + i] = *range[i];
 
-    //I += range.size();
+    I += range.size();
 }
 
 void CPU::LD (u16 addr, vec<u8> range)
@@ -339,7 +366,7 @@ void CPU::LD (vec<u8*> range, u16 addr)
     for (u16 i=0; i<range.size(); ++i)
         *range[i] = RAM[addr + i];
 
-    //I += range.size();
+    I += range.size();
 }
 
 void CPU::LD (vec<u8> range, u16 addr)

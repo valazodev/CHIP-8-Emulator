@@ -1,6 +1,7 @@
 CMakeLists.txt.user
 ASM.txt
 build/
+release/
 Clock.ch8
 Maze.ch8
 Particle.ch8

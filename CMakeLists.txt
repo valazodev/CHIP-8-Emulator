@@ -21,7 +21,7 @@ target_link_libraries(CHIP-8
 
 target_sources(CHIP-8 PRIVATE
     src/cpu.cpp
-    src/disassembler.cpp
+    #src/disassembler.cpp
     src/io.cpp
     src/timer.cpp
 )

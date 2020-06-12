@@ -28,6 +28,7 @@ private:
 
     using u8 = uint8_t;
     using u16 = uint16_t;
+    using Sprite = IO::Sprite;
     using micro = std::chrono::microseconds;
 
     /* Constants */
@@ -44,20 +45,18 @@ private:
     arr <u8,4096> RAM; // Random-access memory
 
     /* Emulation */
-    IO io;
-    u16 opcode;
     Timer<micro> cpu_timer;
     Timer<micro> delay_timer;
+    IO io;
 
     /* Helpers */
     void init_fonts  ();
-    auto byte2sprite (const u8& byte);
-    void uint2str    (u16 val, char* str);
-    bool matches     (const char* opcode, const char* pattern);
+    bool matches     (u16 opcode, const char* pattern);
+    u8&  screen_byte (u8 x, u8 y);
 
     /* Control unit */
-    void fetch   ();
-    void execute ();
+    u16  fetch   ();
+    void execute (u16 opcode);
 
     /* Stack operations */
     u16  stack_top  ();
@@ -103,5 +102,8 @@ private:
     vec<u8*> RNGV (u8 lower_bound, u8 upper_bound);
 
 };
+
+char       to_char   (const uint8_t& hex);
+IO::Sprite to_sprite (const uint8_t& byte);
 
 #endif // CPU_H

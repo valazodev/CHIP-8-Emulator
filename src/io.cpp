@@ -8,7 +8,7 @@ IO::IO (String title, Pixels width, Pixels height, Scale scale) :
 {
     init_SDL();
 
-    pixels.reserve(width * height);
+    pixels.resize(width * height);
     for (unsigned i=0; i<pixels.capacity(); ++i)
         pixels[i] = 0;
 
@@ -52,7 +52,7 @@ void IO::clear ()
 void IO::draw (const Sprite& sprite, Coord x, Coord y)
 {
     for (unsigned col=0; col<sprite.size(); ++col) {
-        auto index = (width * y) + (x + col);
+        unsigned index = (width * y) + (x + col);
         pixels[index] = sprite[col];
     }
     SDL_UpdateTexture(
